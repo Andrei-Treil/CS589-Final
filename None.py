@@ -1,4 +1,3 @@
-# %%
 import math
 import pandas as pd
 import numpy as np
@@ -7,7 +6,6 @@ import matplotlib.pyplot as plt
 from collections import defaultdict,Counter
 from random import sample
 
-# %%
 class DecisionNode():
     '''
     Constructor for decision node
@@ -44,7 +42,6 @@ def learn_tree(data,attr_list,do_ig,attr_vals,targets,do_forest=True,min_size_sp
 
     #find best attr from list using info gain
     max_gain = float('-inf')
-    min_gini = float('inf')
     best_attr = ''
 
     random_attr = sample(attr_list,math.ceil(math.sqrt(len(attr_list)))) if do_forest else attr_list
@@ -64,12 +61,12 @@ def learn_tree(data,attr_list,do_ig,attr_vals,targets,do_forest=True,min_size_sp
     
     #if numeric attr
     if len(best_vals) == 0:
-        best_children['le'] = learn_tree(data.loc[data[best_attr] <= best_thresh],attr_list,do_ig,attr_vals,targets,do_forest,min_size_split,max_gain,max_depth-1,maj_prop) if len(data.loc[data[best_attr] <= best_thresh]) > 0 else DecisionNode(None,None,data['class'].mode()[0],None)
-        best_children['gr'] = learn_tree(data.loc[data[best_attr] > best_thresh],attr_list,do_ig,attr_vals,targets,do_forest,min_size_split,max_gain,max_depth-1,maj_prop) if len(data.loc[data[best_attr] > best_thresh]) > 0 else DecisionNode(None,None,data['class'].mode()[0],None)
+        best_children['le'] = learn_tree(data.loc[data[best_attr] <= best_thresh],attr_list,do_ig,attr_vals,targets,min_size_split,max_gain,max_depth-1,maj_prop) if len(data.loc[data[best_attr] <= best_thresh]) > 0 else DecisionNode(None,None,data['class'].mode()[0],None)
+        best_children['gr'] = learn_tree(data.loc[data[best_attr] > best_thresh],attr_list,do_ig,attr_vals,targets,min_size_split,max_gain,max_depth-1,maj_prop) if len(data.loc[data[best_attr] > best_thresh]) > 0 else DecisionNode(None,None,data['class'].mode()[0],None)
     
     else:
         for i in best_vals:
-            next_child = learn_tree(data.loc[data[best_attr] == i],attr_list,do_ig,attr_vals,targets,do_forest,min_size_split,max_gain,max_depth-1,maj_prop) if len(data.loc[data[best_attr] == i]) > 0 else DecisionNode(None,None,data['class'].mode()[0],None)
+            next_child = learn_tree(data.loc[data[best_attr] == i],attr_list,do_ig,attr_vals,targets,min_size_split,max_gain,max_depth-1,maj_prop) if len(data.loc[data[best_attr] == i]) > 0 else DecisionNode(None,None,data['class'].mode()[0],None)
             best_children[i] = next_child
             
     return DecisionNode(best_attr,best_children,thresh=best_thresh)
@@ -154,8 +151,9 @@ def test_decision(to_test,targs,ntrees):
 
 np.random.seed(1)
 k = 10
+nvals = [1,5,10,20,30,40,50]
 #function to do cross fold validation
-def k_fold(fold,attr_list,attr_vals,targets,nvals,do_forest = True, max_depth=7,min_size_split=10,maj_prop=0.9):
+def k_fold(fold,attr_list,attr_vals,targets,max_depth=7,min_size_split=10,maj_prop=0.9):
     #maps n vals to list of average statistics for each 
     fold_metrics = defaultdict(list)
     #iterate through folds, taking turns being test fold
@@ -171,6 +169,6 @@ def k_fold(fold,attr_list,attr_vals,targets,nvals,do_forest = True, max_depth=7,
             for j in range(n):
                 #generate bootstrap w replacment
                 bootstrap = train_data.sample(frac=1,replace=True)
-                ntree.append(learn_tree(bootstrap,attr_list,True,attr_vals,targets,do_forest,max_depth=max_depth,min_size_split=min_size_split,maj_prop=maj_prop))
+                ntree.append(learn_tree(bootstrap,attr_list,True,attr_vals,targets,max_depth,min_size_split,maj_prop))
             fold_metrics[n].append(test_decision(test_fold,targets,ntree))
     return fold_metrics
